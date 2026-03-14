@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Actu Gabon — Infos du Jour</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0d0d;
+    --paper: #f5f0e8;
+    --accent: #c8410a;
+    --gold: #d4a853;
+    --muted: #7a7060;
+    --card: #fdfaf4;
+    --border: #ddd5c0;
+    --success: #2d7a4f;
+    --intl-blue: #1a4a8a;
+    --intl-light: #eef3fc;
+    --intl-border: #b8cef0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+  }
+
+  /* ── HEADER ───────────────────────────────── */
+  header {
+    background: var(--ink);
+    padding: 18px 20px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 3px solid var(--accent);
+  }
+
+  .header-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+
+  .logo { font-family:'Playfair Display',serif; font-size:26px; font-weight:900; color:var(--paper); letter-spacing:-0.5px; }
+  .logo span { color:var(--gold); }
+
+  .date-tag { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+
+  .tagline { font-size:11px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; border-top:1px solid #2a2a2a; padding-top:7px; margin-top:6px; }
+
+  /* ── VIEW TABS ────────────────────────────── */
+  .view-tabs {
+    display: flex;
+    background: var(--ink);
+    border-bottom: 2px solid var(--border);
+  }
+
+  .view-tab {
+    flex: 1;
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    background: transparent;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+
+  .view-tab.active-gabon   { color: var(--gold); border-bottom-color: var(--accent); }
+  .view-tab.active-intl    { color: #7aa8e8;     border-bottom-color: var(--intl-blue); }
+  .view-tab.active-all     { color: #aaa;         border-bottom-color: #555; }
+
+  /* ── SOURCE CHIPS ─────────────────────────── */
+  .source-chips {
+    display: flex;
+    gap: 6px;
+    padding: 10px 20px 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: #111;
+    border-bottom: 1px solid #222;
+  }
+  .source-chips::-webkit-scrollbar { display:none; }
+
+  .chip {
+    flex-shrink: 0;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid #333;
+    color: #777;
+    background: transparent;
+    letter-spacing: 0.3px;
+    transition: all 0.18s;
+  }
+  .chip.active-gabon { background:var(--accent); border-color:var(--accent); color:white; }
+  .chip.active-intl  { background:var(--intl-blue); border-color:var(--intl-blue); color:white; }
+
+  /* ── FETCH BAR ────────────────────────────── */
+  .fetch-bar {
+    padding: 14px 20px 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-fetch {
+    flex: 1;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 11px 18px;
+    border-radius: 6px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    letter-spacing: 0.3px;
+    transition: transform 0.1s, opacity 0.2s;
+  }
+  .btn-fetch:active { transform:scale(0.97); }
+  .btn-fetch:disabled { opacity:0.6; cursor:not-allowed; }
+
+  .spinner { width:13px; height:13px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  .stats-row { display:flex; gap:6px; }
+
+  .badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .badge-gabon { background:var(--gold); color:var(--ink); }
+  .badge-intl  { background:var(--intl-blue); color:white; }
+
+  /* ── ARTICLES ─────────────────────────────── */
+  .articles-wrap { padding: 0 20px 50px; }
+
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 0 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .dot-gabon { background:var(--accent); }
+  .dot-intl  { background:var(--intl-blue); }
+
+  .section-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    flex: 1;
+  }
+
+  .section-count {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* ── CARD ─────────────────────────────────── */
+  .article-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 13px;
+    overflow: hidden;
+    animation: fadeUp 0.35s ease both;
+  }
+
+  .article-card.intl-card {
+    border-color: var(--intl-border);
+    background: #fafcff;
+  }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+  .card-bar {
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-bar.gabon-bar { background:var(--ink); }
+  .card-bar.intl-bar  { background:var(--intl-blue); }
+
+  .card-bar-left { display:flex; align-items:center; gap:7px; }
+
+  .intl-pill {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    text-transform: uppercase;
+  }
+
+  .source-name-bar {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .gabon-bar .source-name-bar { color:var(--gold); }
+  .intl-bar  .source-name-bar { color:rgba(255,255,255,0.85); }
+
+  .card-time { font-family:'IBM Plex Mono',monospace; font-size:10px; color:rgba(255,255,255,0.4); }
+
+  .card-body { padding:13px; }
+
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+
+  .ai-box {
+    padding: 9px 12px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 11px;
+    font-size: 12.5px;
+    line-height: 1.65;
+  }
+
+  .ai-box.gabon-ai { background:linear-gradient(135deg,#fef7ed,#fdf3e3); border-left:3px solid var(--gold); }
+  .ai-box.intl-ai  { background:linear-gradient(135deg,#eef3fc,#e4edfa); border-left:3px solid var(--intl-blue); }
+
+  .ai-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    display: block;
+  }
+  .gabon-ai .ai-label { color:var(--gold); }
+  .intl-ai  .ai-label { color:var(--intl-blue); }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 9px;
+    border-top: 1px solid var(--border);
+  }
+
+  .cat-tag {
+    background: var(--border);
+    color: var(--muted);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .btn-read {
+    font-size: 11px;
+    font-weight: 600;
+    background: none;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 0;
+  }
+  .gabon-read { color:var(--accent); }
+  .intl-read  { color:var(--intl-blue); }
+
+  /* ── SKELETON ─────────────────────────────── */
+  .skeleton { background:linear-gradient(90deg,#ece8df 25%,#e2ddd4 50%,#ece8df 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:4px; }
+  @keyframes shimmer { from{background-position:200% 0} to{background-position:-200% 0} }
+  .skel-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:13px; margin-bottom:13px; }
+
+  /* ── EMPTY ────────────────────────────────── */
+  .empty { text-align:center; padding:55px 28px; color:var(--muted); }
+  .empty-icon { font-size:44px; margin-bottom:14px; opacity:0.5; }
+  .empty h3 { font-family:'Playfair Display',serif; font-size:19px; color:var(--ink); margin-bottom:7px; }
+  .empty p { font-size:13px; line-height:1.6; }
+
+  /* ── CORS NOTE ────────────────────────────── */
+  .demo-note {
+    background:#fffbf0; border:1px solid var(--gold);
+    border-radius:7px; padding:12px 15px;
+    margin:0 20px 14px; font-size:11.5px;
+    color:#5a4a00; line-height:1.65;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">Actu<span>Gabon</span></div>
+    <div class="date-tag" id="current-date">—</div>
+  </div>
+  <div class="tagline">Presse gabonaise · Regards internationaux · Résumés IA</div>
+</header>
+
+<!-- Vue principale : Gabon / International / Tout mélangé -->
+<div class="view-tabs">
+  <button class="view-tab active-gabon" data-view="gabon"         onclick="switchView('gabon',this)">🇬🇦 Gabon</button>
+  <button class="view-tab"              data-view="international" onclick="switchView('international',this)">🌍 International</button>
+  <button class="view-tab"              data-view="all"           onclick="switchView('all',this)">⚡ Tout</button>
+</div>
+
+<!-- Chips de filtre par source (change dynamiquement selon la vue) -->
+<div class="source-chips" id="source-chips"></div>
+
+<!-- Barre de chargement -->
+<div class="fetch-bar">
+  <button class="btn-fetch" id="fetch-btn" onclick="fetchNews()">
+    <span>🗞️</span> Charger les actualités
+  </button>
+  <div class="stats-row">
+    <div class="badge badge-gabon" id="badge-gabon" title="Articles gabonais">0</div>
+    <div class="badge badge-intl"  id="badge-intl"  title="Articles internationaux">0</div>
+  </div>
+</div>
+
+
+
+<div class="articles-wrap" id="articles-wrap">
+  <div class="empty">
+    <div class="empty-icon">📰</div>
+    <h3>Prêt à lire</h3>
+    <p>Appuie sur "Charger les actualités"<br>pour voir presse gabonaise + regards internationaux</p>
+  </div>
+</div>
+
+<script>
+// ─── DATE ────────────────────────────────────────────────────────
+document.getElementById('current-date').textContent =
+  new Date().toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
+
+// ─── STATE ───────────────────────────────────────────────────────
+let currentView   = 'gabon';
+let activeSource  = 'all';
+let allData       = { gabon: [], international: [], all: [] };
+
+const GABON_SOURCES = [
+  {id:'gabonmediatime', label:'Gabon Media Time'},
+  {id:'gabonreview',    label:'Gabon Review'},
+  {id:'gabonactu',      label:'Gabon Actu'},
+];
+
+const INTL_SOURCES = [
+  {id:'rfi',            label:'RFI'},
+  {id:'france24',       label:'France 24'},
+  {id:'jeuneafrique',   label:'Jeune Afrique'},
+  {id:'bbc_afrique',    label:'BBC Afrique'},
+  {id:'lemonde_afrique',label:'Le Monde'},
+  {id:'brut_afrique',   label:'Brut Afrique'},
+];
+
+// ─── MOCK DATA ────────────────────────────────────────────────────
+const MOCK_GABON = [
+  { source_id:'gabonmediatime', source_name:'Gabon Media Time', source_type:'gabon',
+    title:'Transition politique : le CNT adopte de nouvelles mesures économiques',
+    ai_summary:'Le CTRI a voté des réformes économiques majeures : révision de la fiscalité pétrolière, soutien à l\'agriculture locale et gel des prix sur les produits de première nécessité.',
+    category:'Politique', time:'Il y a 45 min', url:'https://gabonmediatime.com' },
+  { source_id:'gabonreview', source_name:'Gabon Review', source_type:'gabon',
+    title:'Éducation : reprise des cours dans plusieurs établissements de Libreville',
+    ai_summary:'Les écoles librevelloises rouvrent après une grève enseignante. Un accord provisoire a été trouvé sur les arriérés de salaires. La rentrée est confirmée pour lundi prochain.',
+    category:'Éducation', time:'Il y a 1h', url:'https://gabonreview.com' },
+  { source_id:'alibreville', source_name:'Ali Bré', source_type:'gabon',
+    title:'Santé : campagne de vaccination contre le paludisme dans l\'Estuaire',
+    ai_summary:'100 000 enfants de moins de 5 ans ciblés par une campagne antipaludéenne dans l\'Estuaire. Vaccination gratuite dans 47 centres de santé jusqu\'au 15 mars.',
+    category:'Santé', time:'Il y a 2h', url:'https://alibreville.com' },
+  { source_id:'gabonactu', source_name:'Gabon Actu', source_type:'gabon',
+    title:'Sport : les Panthères qualifiées pour le prochain tournoi continental',
+    ai_summary:'Les Panthères du Gabon valident leur ticket après une victoire 2-0. Prochain match prévu en octobre contre le Sénégal.',
+    category:'Sport', time:'Il y a 3h', url:'https://gabonactu.com' },
+];
+
+const MOCK_INTL = [
+  { source_id:'rfi', source_name:'RFI Afrique', source_type:'international',
+    title:'Gabon : les réformes du CTRI saluées par les institutions africaines',
+    ai_summary:'L\'Union Africaine a exprimé son soutien aux réformes engagées par le CTRI au Gabon, soulignant la nécessité d\'un retour rapide à un ordre constitutionnel. La communauté internationale reste attentive à l\'évolution de la transition.',
+    category:'Politique', time:'Il y a 30 min', url:'https://rfi.fr' },
+  { source_id:'france24', source_name:'France 24', source_type:'international',
+    title:'Libreville accueille le sommet des pays producteurs de pétrole d\'Afrique centrale',
+    ai_summary:'La capitale gabonaise reçoit pendant trois jours les délégations des pays membres de la CEEAC pour discuter de la coordination de leur politique pétrolière face à la volatilité des cours mondiaux.',
+    category:'Économie', time:'Il y a 1h20', url:'https://france24.com' },
+  { source_id:'jeuneafrique', source_name:'Jeune Afrique', source_type:'international',
+    title:'Gabon : l\'économie forestière en mutation, entre exploitation et préservation',
+    ai_summary:'Jeune Afrique analyse les nouvelles orientations du Gabon en matière de gestion forestière. Le pays tente de concilier les revenus de l\'exploitation du bois et ses engagements environnementaux internationaux.',
+    category:'Environnement', time:'Il y a 2h', url:'https://jeuneafrique.com' },
+  { source_id:'bbc_afrique', source_name:'BBC Afrique', source_type:'international',
+    title:'Port-Gentil : le hub pétrolier gabonais se réinvente face à la transition énergétique',
+    ai_summary:'Port-Gentil, cœur de l\'industrie pétrolière gabonaise, cherche à diversifier son économie. Des projets d\'énergies renouvelables et de pêche industrielle sont en cours d\'évaluation par les autorités locales.',
+    category:'Économie', time:'Il y a 3h30', url:'https://bbc.com/afrique' },
+];
+
+// ─── VUE ─────────────────────────────────────────────────────────
+function switchView(view, btn) {
+  currentView  = view;
+  activeSource = 'all';
+  document.querySelectorAll('.view-tab').forEach(t => {
+    t.classList.remove('active-gabon','active-intl','active-all');
+  });
+  btn.classList.add(`active-${view}`);
+  renderChips();
+  renderArticles();
+}
+
+// ─── CHIPS ────────────────────────────────────────────────────────
+function renderChips() {
+  const wrap    = document.getElementById('source-chips');
+  const sources = currentView === 'gabon'
+    ? GABON_SOURCES
+    : currentView === 'international'
+      ? INTL_SOURCES
+      : [...GABON_SOURCES, ...INTL_SOURCES];
+
+  const type = currentView === 'international' ? 'intl' : 'gabon';
+
+  wrap.innerHTML = `<button class="chip ${activeSource==='all'?`active-${type}`:''}" onclick="filterSource('all')">Tous</button>`
+    + sources.map(s =>
+        `<button class="chip ${activeSource===s.id?`active-${type}`:''}" onclick="filterSource('${s.id}')">${s.label}</button>`
+      ).join('');
+}
+
+function filterSource(id) {
+  activeSource = id;
+  renderChips();
+  renderArticles();
+}
+
+// ─── FETCH ────────────────────────────────────────────────────────
+async function fetchNews() {
+  const btn  = document.getElementById('fetch-btn');
+  const wrap = document.getElementById('articles-wrap');
+
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Chargement...`;
+
+  // skeletons
+  wrap.innerHTML = [1,2,3].map(() => `
+    <div class="skel-card">
+      <div class="skeleton" style="height:11px;width:40%;margin-bottom:11px"></div>
+      <div class="skeleton" style="height:19px;width:88%;margin-bottom:7px"></div>
+      <div class="skeleton" style="height:19px;width:65%;margin-bottom:15px"></div>
+      <div class="skeleton" style="height:55px;width:100%;margin-bottom:9px"></div>
+      <div class="skeleton" style="height:11px;width:45%"></div>
+    </div>`).join('');
+
+  try {
+    const resp = await fetch('http://localhost:8000/news');
+    if (!resp.ok) throw new Error('Erreur ' + resp.status);
+    const json = await resp.json();
+    allData.gabon         = json.articles.filter(a => a.source_type === 'gabon');
+    allData.international = json.articles.filter(a => a.source_type === 'international');
+    allData.all           = json.articles;
+  } catch (err) {
+    console.warn('Backend inaccessible, mode demo:', err.message);
+    allData.gabon         = MOCK_GABON;
+    allData.international = MOCK_INTL;
+    allData.all           = [...MOCK_GABON, ...MOCK_INTL];
+  }
+
+  document.getElementById('badge-gabon').textContent = allData.gabon.length;
+  document.getElementById('badge-intl').textContent  = allData.international.length;
+
+  btn.disabled = false;
+  btn.innerHTML = `<span>🔄</span> Actualiser`;
+  renderChips();
+  renderArticles();
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────
+function renderArticles() {
+  const wrap = document.getElementById('articles-wrap');
+
+  let articles = currentView === 'all'
+    ? allData.all
+    : allData[currentView] || [];
+
+  if (activeSource !== 'all')
+    articles = articles.filter(a => a.source_id === activeSource);
+
+  if (!articles.length) {
+    wrap.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><h3>Aucun article</h3><p>Aucun article disponible pour ce filtre.</p></div>`;
+    return;
+  }
+
+  // Vue "Tout" : on affiche une section par type
+  if (currentView === 'all') {
+    const gabonArticles = articles.filter(a => a.source_type === 'gabon');
+    const intlArticles  = articles.filter(a => a.source_type === 'international');
+    wrap.innerHTML =
+      (gabonArticles.length ? sectionHtml('gabon', '🇬🇦 Presse gabonaise', gabonArticles) : '') +
+      (intlArticles.length  ? sectionHtml('intl',  '🌍 Regards internationaux', intlArticles) : '');
+    return;
+  }
+
+  // Vue simple
+  wrap.innerHTML = articles.map((a, i) => cardHtml(a, i)).join('');
+}
+
+function sectionHtml(type, label, articles) {
+  return `
+    <div class="section-divider">
+      <span class="section-dot dot-${type}"></span>
+      <span class="section-title">${label}</span>
+      <span class="section-count">${articles.length} articles</span>
+    </div>
+    ${articles.map((a,i) => cardHtml(a, i)).join('')}
+  `;
+}
+
+function cardHtml(a, i) {
+  const isIntl = a.source_type === 'international';
+  const delay  = `animation-delay:${i*0.07}s`;
+
+  return `
+  <div class="article-card ${isIntl?'intl-card':''}" style="${delay}">
+    <div class="card-bar ${isIntl?'intl-bar':'gabon-bar'}">
+      <div class="card-bar-left">
+        ${isIntl ? '<span class="intl-pill">🌍 Intl</span>' : ''}
+        <span class="source-name-bar">${a.source_name}</span>
+      </div>
+      <span class="card-time">${a.time_ago || a.time || 'Récent'}</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${a.title}</div>
+      <div class="ai-box ${isIntl?'intl-ai':'gabon-ai'}">
+        <span class="ai-label">✦ Résumé IA</span>
+        ${a.ai_summary}
+      </div>
+      <div class="card-footer">
+        <span class="cat-tag">${a.category || 'Actualité'}</span>
+        <button class="btn-read ${isIntl?'intl-read':'gabon-read'}"
+          onclick="window.open('${a.url}','_blank')">
+          Lire l'article →
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+</script>
+</body>
+</html>
