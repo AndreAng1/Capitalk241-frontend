@@ -525,8 +525,10 @@ async function deleteArticle(id, title) {
   if (!confirm(`Supprimer définitivement "${title}" ?`)) return;
   try {
     await req('DELETE', `/admin/article/${id}`);
-    allManualArts = allManualArts.filter(a=>a.id!==id);
+    allManualArts  = allManualArts.filter(a=>a.id!==id);
+    allCacheArts   = allCacheArts.filter(a=>a.title!==title);
     renderArticles();
+    alert('✅ Article supprimé du site et de la base de données.');
   } catch(e) { alert('Erreur: '+e.message); }
 }
 
