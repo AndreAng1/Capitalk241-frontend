@@ -232,6 +232,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--sable);color:var(--encre)
       <div class="nav-sec">Système</div>
       <div class="nav-item"   onclick="go('sources',this)"><span class="ic">🔗</span>Gérer les sources</div>
       <div class="nav-item"   onclick="go('actions',this)"><span class="ic">⚡</span>Actions rapides</div>
+      <div class="nav-item"   onclick="go('account',this)"><span class="ic">🔐</span>Mon compte</div>
     </nav>
 
     <div class="content">
@@ -254,10 +255,42 @@ body{font-family:'DM Sans',sans-serif;background:var(--sable);color:var(--encre)
             <input type="text" id="a-title" placeholder="Titre de l'article"/></div>
           <div class="field"><label>Contenu *</label>
             <textarea id="a-content" placeholder="Rédigez votre article ici..."></textarea></div>
-          <div class="field"><label>Image (URL)</label>
-            <input type="url" id="a-img" placeholder="https://..." oninput="prevImg(this.value)"/>
-            <div class="field-hint">URL d'une image qui s'affichera sur le site</div>
-            <img class="img-prev" id="img-prev" alt="Aperçu"/>
+          <div class="field">
+            <label>Image</label>
+            <!-- Tabs -->
+            <div style="display:flex;gap:0;margin-bottom:10px;">
+              <button type="button" id="tab-file" onclick="switchImgTab('file')"
+                style="flex:1;padding:7px;font-size:12px;font-weight:600;cursor:pointer;
+                  background:var(--foret);color:var(--or2);border:none;border-radius:6px 0 0 6px;">
+                📁 Depuis mon ordinateur
+              </button>
+              <button type="button" id="tab-url" onclick="switchImgTab('url')"
+                style="flex:1;padding:7px;font-size:12px;font-weight:600;cursor:pointer;
+                  background:var(--sable2);color:var(--muted);border:none;border-radius:0 6px 6px 0;">
+                🔗 Depuis une URL
+              </button>
+            </div>
+            <!-- File upload -->
+            <div id="img-file-wrap">
+              <input type="file" id="a-img-file" accept="image/*" onchange="handleFileSelect(this)"
+                style="width:100%;padding:10px;border:1.5px dashed var(--sable2);border-radius:6px;
+                  background:var(--ivoire);cursor:pointer;font-size:13px;"/>
+              <div class="field-hint">JPG, PNG ou WebP · Max 5 MB</div>
+              <div id="upload-progress" style="display:none;margin-top:8px;font-size:12px;color:var(--vert);">
+                ⏳ Upload en cours...
+              </div>
+            </div>
+            <!-- URL input -->
+            <div id="img-url-wrap" style="display:none;">
+              <input type="url" id="a-img-url" placeholder="https://exemple.com/image.jpg"
+                oninput="prevImg(this.value);document.getElementById('a-img').value=this.value"/>
+              <div class="field-hint">Colle l'URL directe d'une image</div>
+            </div>
+            <!-- Hidden field that stores the final image URL -->
+            <input type="hidden" id="a-img" />
+            <img class="img-prev" id="img-prev" alt="Aperçu"
+              style="width:100%;max-height:200px;object-fit:cover;border-radius:6px;
+                border:1px solid var(--sable2);margin-top:8px;display:none;"/>
           </div>
           <div class="field"><label>Catégorie</label>
             <select id="a-cat">
@@ -338,6 +371,26 @@ body{font-family:'DM Sans',sans-serif;background:var(--sable);color:var(--encre)
         </div>
       </div>
 
+      <!-- COMPTE -->
+      <div class="sec" id="sec-account">
+        <div class="sec-title">🔐 Mon compte</div>
+        <div class="alert ok"  id="acc-ok"></div>
+        <div class="alert err" id="acc-err"></div>
+        <div class="form-wrap" style="max-width:420px;">
+          <div style="margin-bottom:20px;">
+            <div class="stat-lbl" style="margin-bottom:4px;">Compte connecté</div>
+            <div style="font-size:15px;font-weight:600;color:var(--foret);" id="acc-email-display">—</div>
+          </div>
+          <div class="field"><label>Ancien mot de passe</label>
+            <input type="password" id="pwd-old" placeholder="••••••••"/></div>
+          <div class="field"><label>Nouveau mot de passe</label>
+            <input type="password" id="pwd-new" placeholder="Minimum 8 caractères"/></div>
+          <div class="field"><label>Confirmer le nouveau mot de passe</label>
+            <input type="password" id="pwd-confirm" placeholder="••••••••"/></div>
+          <button class="btn-pub" onclick="changePassword()">🔐 Changer le mot de passe</button>
+        </div>
+      </div>
+
       <!-- ACTIONS -->
       <div class="sec" id="sec-actions">
         <div class="sec-title">⚡ Actions rapides</div>
@@ -408,6 +461,7 @@ function showDash() {
   document.getElementById('login-wrap').style.display='none';
   document.getElementById('dashboard').style.display='block';
   document.getElementById('a-mail').textContent = EMAIL;
+  document.getElementById('acc-email-display').textContent = EMAIL;
 }
 
 // ── NAV ─────────────────────────────────────────────
@@ -613,12 +667,80 @@ async function deleteSource(id) {
 }
 
 // ── PUBLIER ARTICLE ──────────────────────────────────
+// ── IMAGE UPLOAD ────────────────────────────────────
+function switchImgTab(tab) {
+  const fileWrap = document.getElementById('img-file-wrap');
+  const urlWrap  = document.getElementById('img-url-wrap');
+  const tabFile  = document.getElementById('tab-file');
+  const tabUrl   = document.getElementById('tab-url');
+
+  if (tab === 'file') {
+    fileWrap.style.display = 'block';
+    urlWrap.style.display  = 'none';
+    tabFile.style.background = 'var(--foret)';
+    tabFile.style.color      = 'var(--or2)';
+    tabUrl.style.background  = 'var(--sable2)';
+    tabUrl.style.color       = 'var(--muted)';
+  } else {
+    fileWrap.style.display = 'none';
+    urlWrap.style.display  = 'block';
+    tabUrl.style.background  = 'var(--foret)';
+    tabUrl.style.color       = 'var(--or2)';
+    tabFile.style.background = 'var(--sable2)';
+    tabFile.style.color      = 'var(--muted)';
+  }
+}
+
+async function handleFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const progress = document.getElementById('upload-progress');
+  const imgHidden = document.getElementById('a-img');
+  const imgPrev   = document.getElementById('img-prev');
+
+  progress.style.display = 'block';
+  progress.textContent   = '⏳ Upload en cours...';
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const resp = await fetch(B + '/admin/upload-image', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + TOKEN },
+      body: formData
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || 'Erreur upload');
+    }
+
+    const data = await resp.json();
+    imgHidden.value      = data.url;
+    imgPrev.src          = data.url;
+    imgPrev.style.display = 'block';
+    progress.textContent  = '✅ Image uploadée avec succès !';
+    progress.style.color  = 'var(--success)';
+
+  } catch(e) {
+    progress.textContent = '❌ ' + e.message;
+    progress.style.color = 'var(--danger)';
+  }
+}
+
 function prevImg(url) {
   const img = document.getElementById('img-prev');
+  const hidden = document.getElementById('a-img');
   if (url && url.startsWith('http')) {
-    img.src=url; img.style.display='block';
-    img.onerror=()=>img.style.display='none';
-  } else { img.style.display='none'; }
+    img.src = url;
+    img.style.display = 'block';
+    img.onerror = () => img.style.display = 'none';
+    hidden.value = url;
+  } else {
+    img.style.display = 'none';
+  }
 }
 
 async function publishArticle() {
@@ -668,6 +790,30 @@ async function req(method, path, body=null) {
   const d = await r.json();
   if (!r.ok) throw new Error(d.detail || d.error || 'Erreur serveur');
   return d;
+}
+
+// ── CHANGER MOT DE PASSE ─────────────────────────────
+async function changePassword() {
+  const old_pwd  = document.getElementById('pwd-old').value;
+  const new_pwd  = document.getElementById('pwd-new').value;
+  const confirm  = document.getElementById('pwd-confirm').value;
+  const ok       = document.getElementById('acc-ok');
+  const err      = document.getElementById('acc-err');
+  ok.style.display='none'; err.style.display='none';
+
+  if (!old_pwd)           { showErr(err,'Entre ton ancien mot de passe'); return; }
+  if (new_pwd.length < 8) { showErr(err,'Le nouveau mot de passe doit faire au moins 8 caractères'); return; }
+  if (new_pwd !== confirm) { showErr(err,'Les mots de passe ne correspondent pas'); return; }
+
+  try {
+    await req('POST', `/admin/change-password?old_password=${encodeURIComponent(old_pwd)}&new_password=${encodeURIComponent(new_pwd)}`);
+    showOk(ok, '✅ Mot de passe changé avec succès !');
+    document.getElementById('pwd-old').value     = '';
+    document.getElementById('pwd-new').value     = '';
+    document.getElementById('pwd-confirm').value = '';
+  } catch(e) {
+    showErr(err, e.message || 'Erreur lors du changement');
+  }
 }
 
 function showOk(el,m){ el.textContent=m; el.className='alert ok'; el.style.display='block'; setTimeout(()=>el.style.display='none',5000); }
