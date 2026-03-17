@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /admin.html
 
-Sitemap: https://capitalk241.netlify.app/sitemap.xml
+Sitemap: https://gabonphare.com/sitemap.xml
