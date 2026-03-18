@@ -1156,9 +1156,181 @@ function toggleRecap() {
   toggle.classList.toggle('open', !isOpen);
 }
 
+
+function renderChips(){
+  const wrap=document.getElementById('chips');
+  wrap.innerHTML='';
+  if(view==='editorial'){
+    const sp=document.createElement('span');
+    sp.style.cssText='font-size:10px;color:rgba(201,150,58,.45);padding:4px 0;';
+    sp.textContent='Articles rédigés par la rédaction Gabon Phare';
+    wrap.appendChild(sp);
+    return;
+  }
+  const srcs=view==='gabon'?GSRC:view==='international'?ISRC:[...GSRC,...ISRC];
+  const t=view==='international'?'ci':'cg';
+
+  const allBtn=document.createElement('button');
+  allBtn.className='chip '+t+(src==='all'?' on':'');
+  allBtn.textContent='Tous';
+  allBtn.addEventListener('click',()=>setSrc('all'));
+  wrap.appendChild(allBtn);
+
+  srcs.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.className='chip '+t+(src===s.id?' on':'');
+    btn.textContent=s.label;
+    btn.addEventListener('click',()=>setSrc(s.id));
+    wrap.appendChild(btn);
+  });
+}
+
+function setSrc(id){src=id;page=1;renderChips();render();}
+
+function render(){
+  const main=document.getElementById('main');
+  let arts;
+  if(view==='editorial'){
+    arts=data.editorial||[];
+  } else {
+    arts=view==='all'?data.all:(data[view]||[]);
+  }
+  if(src!=='all')arts=arts.filter(a=>a.source_id===src);
+
+  if(!arts.length){
+    main.innerHTML='<div class="state"><div class="state-ico">📭</div><h3>Aucun article disponible</h3><p>Aucun contenu pour ce filtre.<br>Réessaie dans quelques minutes.</p></div>';
+    return;
+  }
+
+  const total=arts.length;
+  const nPg=Math.ceil(total/PER_PAGE);
+  page=Math.min(page,nPg);
+  const slice=arts.slice((page-1)*PER_PAGE,page*PER_PAGE);
+
+  if(view==='all'){
+    const gab =slice.filter(a=>a.source_type==='gabon');
+    const intl=slice.filter(a=>a.source_type==='international');
+    main.innerHTML=
+      (gab.length ?secBlock('g','🇬🇦 Presse gabonaise',gab)      :'')+
+      (intl.length?secBlock('i','🌍 Regards internationaux',intl):'')+
+      pgBlock(page,nPg,total);
+  }else{
+    main.innerHTML=slice.map((a,i)=>cardHtml(a,i)).join('')+pgBlock(page,nPg,total);
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function secBlock(t,lbl,arts){
+  return '<div class="sec-head"><span class="sdot '+t+'"></span><span class="slbl">'+lbl+'</span><span class="sn '+t+'">'+arts.length+'</span><div class="srule '+t+'"></div></div>'+
+    arts.map((a,i)=>cardHtml(a,i)).join('');
+}
+
+function cardEditorial(a,i){
+  const div=document.createElement('div');
+  div.className='card editorial';
+  div.style.animationDelay=(i*0.05)+'s';
+
+  const header=document.createElement('div');
+  header.className='card-editorial-header';
+  header.innerHTML='<span class="editorial-badge">✍ Gabon Phare</span><span class="editorial-date">'+(a.time_ago||'Récent')+'</span>';
+  div.appendChild(header);
+
+  if(a.image_url){
+    const img=document.createElement('img');
+    img.className='card-editorial-img';
+    img.src=a.image_url;
+    img.alt=a.title;
+    img.onerror=function(){this.style.display='none';};
+    div.appendChild(img);
+  }
+
+  const title=document.createElement('div');
+  title.className='card-editorial-title';
+  title.textContent=a.title;
+  div.appendChild(title);
+
+  const body=document.createElement('div');
+  body.className='card-editorial-content';
+  body.textContent=a.content||a.ai_summary||'';
+  div.appendChild(body);
+
+  const footer=document.createElement('div');
+  footer.className='card-editorial-footer';
+  footer.innerHTML='<span class="editorial-cat">'+(a.category||'Éditorial')+'</span>';
+  div.appendChild(footer);
+
+  return div.outerHTML;
+}
+
+function cardHtml(a,i){
+  if(a.manual||a.source_id==='gabon_phare_editorial'){return cardEditorial(a,i);}
+  const isI=a.source_type==='international';
+  const t=isI?'i':'g';
+  const url=(a.url||'#');
+  let sum=a.ai_summary||'—';
+  ['Résumé :','Résumé:','# Résumé','**Résumé**'].forEach(p=>{if(sum.startsWith(p))sum=sum.slice(p.length).trim();});
+
+  const div=document.createElement('div');
+  div.className='card '+(isI?'intl':'');
+  div.style.animationDelay=(i*.05)+'s';
+
+  const bar=document.createElement('div');
+  bar.className='cbar '+t;
+  div.appendChild(bar);
+
+  const meta=document.createElement('div');
+  meta.className='cmeta';
+  meta.innerHTML='<span class="csrc '+t+'">'+(isI?'<span class="intl-tag">INTL</span>':'')+a.source_name+'</span><span class="ctime">'+(a.time_ago||a.time||'Récent')+'</span>';
+  div.appendChild(meta);
+
+  const title=document.createElement('div');
+  title.className='ctitle';
+  title.textContent=a.title;
+  div.appendChild(title);
+
+  const sumDiv=document.createElement('div');
+  sumDiv.className='csum '+t;
+  sumDiv.innerHTML='<div class="csum-lbl">Résumé Gabon Phare</div>'+sum;
+  div.appendChild(sumDiv);
+
+  const foot=document.createElement('div');
+  foot.className='cfoot';
+  const cat=document.createElement('span');
+  cat.className='ccat';
+  cat.textContent=a.category||'Actualité';
+  foot.appendChild(cat);
+  const btn=document.createElement('button');
+  btn.className='cread '+t;
+  btn.textContent='Lire l\'article →';
+  btn.addEventListener('click',()=>window.open(url,'_blank'));
+  foot.appendChild(btn);
+  div.appendChild(foot);
+
+  return div.outerHTML;
+}
+
+function pgBlock(cur,total,artTotal){
+  if(total<=1)return'';
+  let nums=new Set([1,total]);
+  for(let p=Math.max(1,cur-2);p<=Math.min(total,cur+2);p++)nums.add(p);
+  nums=[...nums].sort((a,b)=>a-b);
+  let btns='',prev=0;
+  for(const n of nums){
+    if(prev&&n-prev>1)btns+='<span class="pgbtn" style="cursor:default;color:#ccc;border-color:transparent">…</span>';
+    btns+='<button class="pgbtn '+(n===cur?'on':'')+'" onclick="goPage('+n+')">'+n+'</button>';
+    prev=n;
+  }
+  const s=(cur-1)*PER_PAGE+1,e=Math.min(cur*PER_PAGE,artTotal);
+  return '<div class="pages"><button class="pgbtn" onclick="goPage('+(cur-1)+')" '+(cur===1?'disabled':'')+'>‹</button>'+btns+'<button class="pgbtn" onclick="goPage('+(cur+1)+')" '+(cur===total?'disabled':'')+'>›</button></div><p class="pg-info">Articles '+s+'–'+e+' sur '+artTotal+'</p>';
+}
+
+function goPage(p){page=p;render();}
+
+setInterval(()=>fetchData(false),60*60*1000);
+setInterval(()=>fetchRecap(),60*60*1000);
 renderChips();
-fetchData(false);   // chargement automatique au démarrage
-fetchRecap();       // charge le récap s'il existe
+fetchData(false);
+fetchRecap();
 
 </script>
 </body>
