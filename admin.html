@@ -232,6 +232,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--sable);color:var(--encre)
       <div class="nav-sec">Système</div>
       <div class="nav-item"   onclick="go('sources',this)"><span class="ic">🔗</span>Gérer les sources</div>
       <div class="nav-item"   onclick="go('actions',this)"><span class="ic">⚡</span>Actions rapides</div>
+      <div class="nav-item"   onclick="go('about',this)"><span class="ic">ℹ️</span>À propos</div>
       <div class="nav-item"   onclick="go('account',this)"><span class="ic">🔐</span>Mon compte</div>
     </nav>
 
@@ -371,6 +372,55 @@ body{font-family:'DM Sans',sans-serif;background:var(--sable);color:var(--encre)
         </div>
       </div>
 
+      <!-- À PROPOS -->
+      <div class="sec" id="sec-about">
+        <div class="sec-title">ℹ️ Page À propos</div>
+        <div class="alert ok"  id="ab-ok"></div>
+        <div class="alert err" id="ab-err"></div>
+        <div class="form-wrap" style="max-width:720px;">
+
+          <div class="field">
+            <label>Texte de présentation *</label>
+            <textarea id="ab-text" style="min-height:280px;line-height:1.8;"
+              placeholder="Gabon Phare est né de cette frustration personnelle..."></textarea>
+            <div class="field-hint">Ce texte apparaîtra dans l'onglet "À propos" du site. Sauts de ligne respectés.</div>
+          </div>
+
+          <div class="field">
+            <label>Image</label>
+            <div style="display:flex;gap:0;margin-bottom:10px;">
+              <button type="button" id="ab-tab-file" onclick="switchAboutImgTab('file')"
+                style="flex:1;padding:7px;font-size:12px;font-weight:600;cursor:pointer;
+                background:var(--foret);color:var(--or2);border:none;border-radius:6px 0 0 6px;">
+                📁 Depuis mon ordinateur
+              </button>
+              <button type="button" id="ab-tab-url" onclick="switchAboutImgTab('url')"
+                style="flex:1;padding:7px;font-size:12px;font-weight:600;cursor:pointer;
+                background:var(--sable2);color:var(--muted);border:none;border-radius:0 6px 6px 0;">
+                🔗 Depuis une URL
+              </button>
+            </div>
+            <div id="ab-file-wrap">
+              <input type="file" id="ab-img-file" accept="image/*" onchange="handleAboutFileSelect(this)"
+                style="width:100%;padding:10px;border:1.5px dashed var(--sable2);border-radius:6px;
+                background:var(--ivoire);cursor:pointer;font-size:13px;"/>
+              <div class="field-hint">JPG, PNG ou WebP · Max 5 MB</div>
+              <div id="ab-upload-progress" style="display:none;margin-top:8px;font-size:12px;color:var(--vert);"></div>
+            </div>
+            <div id="ab-url-wrap" style="display:none;">
+              <input type="url" id="ab-img-url" placeholder="https://exemple.com/image.jpg"
+                oninput="document.getElementById('ab-img').value=this.value;prevAboutImg(this.value)"/>
+            </div>
+            <input type="hidden" id="ab-img"/>
+            <img id="ab-img-prev" alt="Aperçu"
+              style="width:100%;max-height:220px;object-fit:cover;border-radius:6px;
+              border:1px solid var(--sable2);margin-top:10px;display:none;"/>
+          </div>
+
+          <button class="btn-pub" onclick="saveAbout()">💾 Enregistrer la page À propos</button>
+        </div>
+      </div>
+
       <!-- COMPTE -->
       <div class="sec" id="sec-account">
         <div class="sec-title">🔐 Mon compte</div>
@@ -473,6 +523,7 @@ function go(name, btn) {
   if (name==='stats')    loadStats();
   if (name==='articles') loadArticles();
   if (name==='sources')  loadSources();
+  if (name==='about')    loadAboutAdmin();
 }
 
 // ── STATS ────────────────────────────────────────────
@@ -817,6 +868,85 @@ async function changePassword() {
   } catch(e) {
     showErr(err, e.message || 'Erreur lors du changement');
   }
+}
+
+// ── À PROPOS ─────────────────────────────────────────
+async function loadAboutAdmin(){
+  try {
+    const r = await req('GET', '/about');
+    if(r.available){
+      document.getElementById('ab-text').value = r.text || '';
+      if(r.image_url){
+        document.getElementById('ab-img').value = r.image_url;
+        document.getElementById('ab-img').dataset.uploadedUrl = r.image_url;
+        const prev = document.getElementById('ab-img-prev');
+        prev.src = r.image_url;
+        prev.style.display = 'block';
+        document.getElementById('ab-img-url').value = r.image_url;
+      }
+    }
+  } catch(e){ console.warn('About load error:', e); }
+}
+
+function switchAboutImgTab(tab){
+  const fw = document.getElementById('ab-file-wrap');
+  const uw = document.getElementById('ab-url-wrap');
+  const tf = document.getElementById('ab-tab-file');
+  const tu = document.getElementById('ab-tab-url');
+  if(tab==='file'){
+    fw.style.display='block'; uw.style.display='none';
+    tf.style.background='var(--foret)'; tf.style.color='var(--or2)';
+    tu.style.background='var(--sable2)'; tu.style.color='var(--muted)';
+  } else {
+    fw.style.display='none'; uw.style.display='block';
+    tu.style.background='var(--foret)'; tu.style.color='var(--or2)';
+    tf.style.background='var(--sable2)'; tf.style.color='var(--muted)';
+  }
+}
+
+async function handleAboutFileSelect(input){
+  const file = input.files[0];
+  if(!file) return;
+  const prog = document.getElementById('ab-upload-progress');
+  prog.style.display='block'; prog.textContent='⏳ Upload en cours...';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch(B+'/admin/upload-image', {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+TOKEN},
+      body: fd
+    });
+    if(!r.ok){ const e=await r.json(); throw new Error(e.detail||'Erreur'); }
+    const d = await r.json();
+    document.getElementById('ab-img').value = d.url;
+    document.getElementById('ab-img').dataset.uploadedUrl = d.url;
+    const prev = document.getElementById('ab-img-prev');
+    prev.src=d.url; prev.style.display='block';
+    prog.textContent='✅ Image uploadée !'; prog.style.color='var(--success)';
+  } catch(e){
+    prog.textContent='❌ '+e.message; prog.style.color='var(--danger)';
+  }
+}
+
+function prevAboutImg(url){
+  const img = document.getElementById('ab-img-prev');
+  if(url && url.startsWith('http')){ img.src=url; img.style.display='block'; img.onerror=()=>img.style.display='none'; }
+  else { img.style.display='none'; }
+}
+
+async function saveAbout(){
+  const text  = document.getElementById('ab-text').value.trim();
+  const imgEl = document.getElementById('ab-img');
+  const image = (imgEl.dataset.uploadedUrl || imgEl.value || '').trim();
+  const ok    = document.getElementById('ab-ok');
+  const err   = document.getElementById('ab-err');
+  ok.style.display='none'; err.style.display='none';
+  if(!text){ showErr(err,'Le texte est obligatoire'); return; }
+  try {
+    await req('POST', '/admin/about', {text, image_url: image});
+    showOk(ok, '✅ Page À propos enregistrée !');
+  } catch(e){ showErr(err, e.message||'Erreur'); }
 }
 
 function showOk(el,m){ el.textContent=m; el.className='alert ok'; el.style.display='block'; setTimeout(()=>el.style.display='none',5000); }
