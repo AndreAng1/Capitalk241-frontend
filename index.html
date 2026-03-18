@@ -873,7 +873,11 @@ function setView(v,btn){
 function renderChips(){
   const wrap=document.getElementById('chips');
   if(view==='editorial'){
-    wrap.innerHTML='<span style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.35);padding:4px 0;letter-spacing:1px;">Articles rédigés par la rédaction Gabon Phare</span>';
+    const el = document.createElement('span');
+    el.textContent = 'Articles rédigés par la rédaction Gabon Phare';
+    el.style.cssText = 'font-size:10px;color:rgba(201,150,58,.45);padding:4px 0;';
+    wrap.innerHTML = '';
+    wrap.appendChild(el);
     return;
   }
   const srcs=view==='gabon'?GSRC:view==='international'?ISRC:[...GSRC,...ISRC];
