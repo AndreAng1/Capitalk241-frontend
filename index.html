@@ -1089,169 +1089,34 @@ async function loadAbout(){
     const r = await fetch(BACKEND_ABOUT);
     const d = await r.json();
     if(!d.available || !d.text){
-      box.innerHTML = '<div class="state"><div class="state-ico">✍️</div><h3>À propos</h3><p>Contenu à venir &#8212; configurez cette page depuis l&#39;espace admin.</p></div>';
+      box.innerHTML = '';
+      const el = document.createElement('div');
+      el.className = 'state';
+      const ico = document.createElement('div');
+      ico.className = 'state-ico';
+      ico.textContent = '✍️';
+      const h3 = document.createElement('h3');
+      h3.textContent = 'À propos';
+      const p = document.createElement('p');
+      p.textContent = 'Contenu à venir — configurez cette page depuis l\'espace admin.';
+      el.appendChild(ico);
+      el.appendChild(h3);
+      el.appendChild(p);
+      box.appendChild(el);
       return;
     }
-    const img = d.image_url
-      ? `<img class="about-img" src="${d.image_url}" alt="Gabon Phare" onerror="this.style.display='none'">`
-      : '';
-    box.innerHTML = `${img}<div class="about-text">${d.text.replace(/\n/g,'<br>')}</div>`;
+    let html = '';
+    if(d.image_url){
+      html += '<img class="about-img" src="'+d.image_url+'" alt="Gabon Phare" onerror="this.style.display='none'">';
+    }
+    html += '<div class="about-text">'+d.text.replace(/
+/g,'<br>')+'</div>';
+    box.innerHTML = html;
   } catch(e){
     box.innerHTML = '<div class="state"><p>Impossible de charger le contenu.</p></div>';
   }
 }
 
-function renderChips(){
-  const wrap=document.getElementById('chips');
-  if(view==='editorial'){
-    const el = document.createElement('span');
-    el.textContent = 'Articles rédigés par la rédaction Gabon Phare';
-    el.style.cssText = 'font-size:10px;color:rgba(201,150,58,.45);padding:4px 0;';
-    wrap.innerHTML = '';
-    wrap.appendChild(el);
-    return;
-  }
-  const srcs=view==='gabon'?GSRC:view==='international'?ISRC:[...GSRC,...ISRC];
-  const t=view==='international'?'ci':'cg';
-  wrap.innerHTML=
-    `<button class="chip ${t} ${src==='all'?'on':''}" onclick="setSrc('all')">Tous</button>`+
-    srcs.map(s=>`<button class="chip ${t} ${src===s.id?'on':''}" onclick="setSrc('${s.id}')">${s.label}</button>`).join('');
-}
-
-function setSrc(id){src=id;page=1;renderChips();render();}
-
-function render(){
-  const main=document.getElementById('main');
-  let arts;
-  if(view==='editorial'){
-    arts=data.editorial||[];
-  } else {
-    arts=view==='all'?data.all:(data[view]||[]);
-  }
-  if(src!=='all')arts=arts.filter(a=>a.source_id===src);
-
-  if(!arts.length){
-    main.innerHTML=`<div class="state">
-      <div class="state-ico">📭</div>
-      <h3>Aucun article disponible</h3>
-      <p>Aucun contenu pour ce filtre.<br>Réessaie dans quelques minutes.</p>
-    </div>`;
-    return;
-  }
-
-  const total=arts.length;
-  const nPg=Math.ceil(total/PER_PAGE);
-  page=Math.min(page,nPg);
-  const slice=arts.slice((page-1)*PER_PAGE,page*PER_PAGE);
-
-  if(view==='all'){
-    const gab =slice.filter(a=>a.source_type==='gabon');
-    const intl=slice.filter(a=>a.source_type==='international');
-    main.innerHTML=
-      (gab.length ?secBlock('g','🇬🇦 Presse gabonaise',gab)      :'')+
-      (intl.length?secBlock('i','🌍 Regards internationaux',intl):'') +
-      pgBlock(page,nPg,total);
-  }else{
-    main.innerHTML=slice.map((a,i)=>cardHtml(a,i)).join('')+pgBlock(page,nPg,total);
-  }
-
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-function secBlock(t,lbl,arts){
-  return `
-    <div class="sec-head">
-      <span class="sdot ${t}"></span>
-      <span class="slbl">${lbl}</span>
-      <span class="sn ${t}">${arts.length}</span>
-      <div class="srule ${t}"></div>
-    </div>
-    ${arts.map((a,i)=>cardHtml(a,i)).join('')}`;
-}
-
-function cardEditorial(a,i){
-  const delay = i*0.05;
-  const img = a.image_url
-    ? `<img class="card-editorial-img" src="${a.image_url}" alt="${a.title}" onerror="this.style.display='none'">`
-    : '';
-  const date = a.time_ago || 'À l\'instant';
-  const cat  = a.category || 'Éditorial';
-  // Affiche le contenu complet (pas juste le résumé)
-  const body = a.content || a.ai_summary || '';
-
-  return `
-  <div class="card editorial" style="animation-delay:${delay}s">
-    <div class="card-editorial-header">
-      <span class="editorial-badge">✍ Gabon Phare</span>
-      <span class="editorial-date">${date}</span>
-    </div>
-    ${img}
-    <div class="card-editorial-title">${a.title}</div>
-    <div class="card-editorial-content">${body}</div>
-    <div class="card-editorial-footer">
-      <span class="editorial-cat">${cat}</span>
-    </div>
-  </div>`;
-}
-
-function cardHtml(a,i){
-  // Article éditorial Gabon Phare — affichage spécial
-  if(a.manual || a.source_id==='gabon_phare_editorial'){
-    return cardEditorial(a,i);
-  }
-  const isI=a.source_type==='international';
-  const t=isI?'i':'g';
-  const url=(a.url||'#').replace(/'/g,'%27');
-  let sum=a.ai_summary||'—';
-  ['Résumé :','Résumé:','# Résumé','**Résumé**'].forEach(p=>{
-    if(sum.startsWith(p))sum=sum.slice(p.length).trim();
-  });
-  return `
-  <div class="card ${isI?'intl':''}" style="animation-delay:${i*.05}s">
-    <div class="cbar ${t}"></div>
-    <div class="cmeta">
-      <span class="csrc ${t}">${isI?'<span class="intl-tag">INTL</span>':''}${a.source_name}</span>
-      <span class="ctime">${a.time_ago||a.time||'Récent'}</span>
-    </div>
-    <div class="ctitle">${a.title}</div>
-    <div class="csum ${t}">
-      <div class="csum-lbl">Résumé Gabon Phare</div>
-      ${sum}
-    </div>
-    <div class="cfoot">
-      <span class="ccat">${a.category||'Actualité'}</span>
-      <button class="cread ${t}" onclick="window.open('${url}','_blank')">Lire l'article →</button>
-    </div>
-  </div>`;
-}
-
-function pgBlock(cur,total,artTotal){
-  if(total<=1)return'';
-  let nums=new Set([1,total]);
-  for(let p=Math.max(1,cur-2);p<=Math.min(total,cur+2);p++)nums.add(p);
-  nums=[...nums].sort((a,b)=>a-b);
-  let btns='',prev=0;
-  for(const n of nums){
-    if(prev&&n-prev>1)btns+=`<span class="pgbtn" style="cursor:default;color:#ccc;border-color:transparent">…</span>`;
-    btns+=`<button class="pgbtn ${n===cur?'on':''}" onclick="goPage(${n})">${n}</button>`;
-    prev=n;
-  }
-  const s=(cur-1)*PER_PAGE+1,e=Math.min(cur*PER_PAGE,artTotal);
-  return `
-    <div class="pages">
-      <button class="pgbtn" onclick="goPage(${cur-1})" ${cur===1?'disabled':''}>‹</button>
-      ${btns}
-      <button class="pgbtn" onclick="goPage(${cur+1})" ${cur===total?'disabled':''}>›</button>
-    </div>
-    <p class="pg-info">Articles ${s}–${e} sur ${artTotal}</p>`;
-}
-
-function goPage(p){page=p;render();}
-
-setInterval(()=>fetchData(false),60*60*1000);
-setInterval(()=>fetchRecap(),60*60*1000);  // rafraîchit le récap toutes les heures
-
-// ══ RÉCAP HEBDOMADAIRE ══════════════════════════════
 async function fetchRecap() {
   try {
     const r    = await fetch(BACKEND_RECAP);
