@@ -1089,7 +1089,7 @@ async function loadAbout(){
     const r = await fetch(BACKEND_ABOUT);
     const d = await r.json();
     if(!d.available || !d.text){
-      box.innerHTML = '<div class="state"><div class="state-ico">✍️</div><h3>À propos</h3><p>Contenu à venir — configurez cette page depuis l'espace admin.</p></div>';
+      box.innerHTML = '<div class="state"><div class="state-ico">✍️</div><h3>À propos</h3><p>Contenu à venir &#8212; configurez cette page depuis l&#39;espace admin.</p></div>';
       return;
     }
     const img = d.image_url
