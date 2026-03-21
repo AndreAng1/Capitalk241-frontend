@@ -414,9 +414,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--sable);color:var(--encre)
           </div>
 
           <div class="field">
+            <label>Articles à scraper par jour</label>
+            <input type="number" id="set-articles" min="5" max="200" value="15" oninput="updateArticlesHint()"
+              placeholder="Ex: 15"/>
+            <div class="field-hint" id="set-articles-hint">Le backend calcule automatiquement combien prendre par source à chaque cycle</div>
+          </div>
+
+          <div class="field">
             <label>Fréquence de scraping (heures)</label>
-            <input type="number" id="set-interval" min="1" max="24" value="3"
-              placeholder="Ex: 3"/>
+            <input type="number" id="set-interval" min="1" max="24" value="8" oninput="updateArticlesHint()"
+              placeholder="Ex: 8"/>
             <div class="field-hint">Toutes les X heures, le site récupère de nouveaux articles</div>
           </div>
 
@@ -931,23 +938,42 @@ async function loadSettings(){
     document.getElementById('set-fb-rem').textContent = r.fb_posts_remaining + ' publications restantes';
     document.getElementById('set-fb-limit').value = r.fb_daily_limit;
     document.getElementById('set-fb-current').textContent = r.fb_daily_limit;
-    document.getElementById('set-interval').value = r.scraping_interval_hours || 3;
+    document.getElementById('set-interval').value = r.scraping_interval_hours || 8;
+    document.getElementById('set-articles').value = r.daily_articles_target || 15;
+    // Calcule et affiche l'aperçu
+    updateArticlesHint();
   } catch(e){ console.warn('Settings error:', e); }
 }
 
 async function saveSettings(){
   const limit    = parseInt(document.getElementById('set-fb-limit').value);
   const interval = parseInt(document.getElementById('set-interval').value);
+  const articles = parseInt(document.getElementById('set-articles').value);
   const ok  = document.getElementById('set-ok');
   const err = document.getElementById('set-err');
   ok.style.display='none'; err.style.display='none';
   if(isNaN(limit)||limit<1||limit>50){showErr(err,'Limite FB invalide (1-50)');return;}
   if(isNaN(interval)||interval<1||interval>24){showErr(err,'Intervalle invalide (1-24h)');return;}
+  if(isNaN(articles)||articles<5||articles>200){showErr(err,'Articles/jour invalide (5-200)');return;}
   try {
-    const r = await req('POST', '/admin/settings', {fb_daily_limit:limit, scraping_interval_hours:interval});
-    showOk(ok, '✅ Paramètres enregistrés : '+r.changes.join(', '));
+    const r = await req('POST', '/admin/settings', {
+      fb_daily_limit: limit,
+      scraping_interval_hours: interval,
+      daily_articles_target: articles
+    });
+    showOk(ok, '✅ ' + r.detail);
     document.getElementById('set-fb-current').textContent = limit;
   } catch(e){ showErr(err, e.message||'Erreur'); }
+}
+
+// ── CALCUL APERÇU ARTICLES ───────────────────────────
+function updateArticlesHint(){
+  const articles = parseInt(document.getElementById('set-articles').value) || 15;
+  const interval = parseInt(document.getElementById('set-interval').value) || 8;
+  const cycles   = Math.max(1, Math.round(24 / interval));
+  const perCycle = Math.max(1, Math.round(articles / cycles));
+  const hint = document.getElementById('set-articles-hint');
+  if(hint) hint.textContent = cycles + ' cycle(s)/jour × ~' + perCycle + ' articles/source/cycle = ~' + articles + ' articles/jour';
 }
 
 // ── À PROPOS ─────────────────────────────────────────
