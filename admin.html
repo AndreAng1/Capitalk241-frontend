@@ -596,7 +596,12 @@ async function loadStats() {
         <div class="stat-val">${s.articles_in_cache}</div>
         <div class="stat-sub">${s.gabon_articles} gabonais · ${s.intl_articles} intl</div>
       </div>
-      <div class="stat-card">
+            <div class="stat-card dark">
+        <div class="stat-lbl">Articles scrapés aujourd&#39;hui</div>
+        <div class="stat-val">${s.articles_today||0}</div>
+        <div class="stat-sub">Objectif : ${s.articles_target||15}/jour</div>
+      </div>
+<div class="stat-card">
         <div class="stat-lbl">Publications FB aujourd'hui</div>
         <div class="stat-val">${s.fb_posts_today}</div>
         <div class="stat-sub">Reste ${s.fb_posts_remaining} sur ${s.fb_daily_limit}</div>
